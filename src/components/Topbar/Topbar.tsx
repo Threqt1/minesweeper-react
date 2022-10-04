@@ -1,4 +1,7 @@
 import DifficultyDropdown from "./DifficultyDropdown";
+import FlagTracker from "./FlagTracker";
+import TimeTracker from "./TimeTracker";
+import VolumeToggle from "./VolumeToggle";
 import "./Topbar.scss";
 
 const Navbar = (props: any) => {
@@ -9,11 +12,18 @@ const Navbar = (props: any) => {
           <DifficultyDropdown />
         </li>
       </ul>
-      <ul className="topbar-elem navbar-center">
-        <li></li>
+      <ul className="topbar-elem topbar-center">
+        <li>
+          <FlagTracker />
+        </li>
+        <li>
+          <TimeTracker />
+        </li>
       </ul>
-      <ul className="topbar-elem navbar-right">
-        <li></li>
+      <ul className="topbar-elem topbar-right">
+        <li>
+          <VolumeToggle />
+        </li>
       </ul>
     </nav>
   );
