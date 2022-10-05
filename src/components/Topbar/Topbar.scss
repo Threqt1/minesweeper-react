@@ -1,8 +1,7 @@
-$topbar-background: #4a752c;
-
 .topbar {
   height: 60px;
-  background-color: $topbar-background;
+  width: 60%;
+  background-color: #4a752c;
   display: flex;
 
   .topbar-elem {

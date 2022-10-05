@@ -1,0 +1,11 @@
+.board {
+  display: flex;
+  flex-direction: column;
+  width: 60%;
+  height: 60%;
+
+  .row {
+    flex: 1;
+    display: flex;
+  }
+}
