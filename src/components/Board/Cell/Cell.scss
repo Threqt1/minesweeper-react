@@ -1,3 +1,108 @@
 .cell {
   flex: 1;
+  aspect-ratio: 1/1;
+  cursor: pointer;
+}
+
+.hidden-0 {
+  background-color: rgb(170, 215, 81) !important;
+}
+
+.hidden-1 {
+  background-color: rgb(162, 209, 73) !important;
+}
+
+.flipped-0 {
+  background-color: rgb(229, 194, 159) !important;
+}
+
+.flipped-1 {
+  background-color: rgb(215, 184, 153) !important;
+}
+
+@mixin flipped_maker($color) {
+  color: $color !important;
+  font-family: "Roboto";
+  font-weight: 900;
+  font-size: 2.2vw;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.near-1 {
+  @include flipped_maker(rgb(32, 120, 208));
+}
+
+.near-2 {
+  @include flipped_maker(rgb(69, 146, 67));
+}
+
+.near-3 {
+  @include flipped_maker(rgb(211, 48, 48));
+}
+
+.near-4 {
+  @include flipped_maker(rgb(131, 44, 161));
+}
+
+.near-5 {
+  @include flipped_maker(rgb(255, 143, 0));
+}
+
+.near-6 {
+  @include flipped_maker(rgb(0, 151, 167));
+}
+
+.near-7 {
+  @include flipped_maker(rgb(66, 66, 66));
+}
+
+.near-8 {
+  @include flipped_maker(rgb(158, 158, 158));
+}
+
+.mine_circle {
+  visibility: hidden;
+}
+
+@mixin mineMaker($color, $dark_color) {
+  background-color: $color !important;
+
+  .mine_circle {
+    visibility: visible !important;
+    background-color: $dark_color !important;
+  }
+}
+
+.mine-0 {
+  @include mineMaker(rgb(219, 50, 54), rgb(154, 33, 35));
+}
+
+.mine-1 {
+  @include mineMaker(rgb(237, 68, 181), rgb(154, 44, 118));
+}
+
+.mine-2 {
+  @include mineMaker(rgb(72, 133, 237), rgb(47, 86, 154));
+}
+
+.mine-3 {
+  @include mineMaker(rgb(0, 135, 68), rgb(0, 88, 44));
+}
+
+.mine-4 {
+  @include mineMaker(rgb(72, 230, 241), rgb(47, 150, 157));
+}
+
+.mine-5 {
+  @include mineMaker(rgb(182, 72, 242), rgb(118, 47, 157));
+}
+
+.mine-6 {
+  @include mineMaker(rgb(244, 194, 13), rgb(159, 126, 8));
+}
+
+.mine-7 {
+  @include mineMaker(rgb(244, 132, 13), rgb(158, 86, 8));
 }
