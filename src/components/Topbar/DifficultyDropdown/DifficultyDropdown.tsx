@@ -1,5 +1,5 @@
 import { useState } from "react";
-import DifficultyInfo, { Difficulties } from "../../../data/difficulties";
+import { Difficulties, DifficultyList } from "../../../data/difficulties";
 import "./DifficultyDropdown.scss";
 
 type Visiblity = "hidden" | "visible";
@@ -22,7 +22,7 @@ const DifficultyDropdown = (props: any) => {
         {difficulty}
       </button>
       <div className="difficultyOptions" style={{ visibility: display }}>
-        {(Object.keys(DifficultyInfo) as Difficulties[]).map(
+        {(Object.keys(DifficultyList) as Difficulties[]).map(
           (currDifficulty) => (
             <div
               className="difficultyOption"

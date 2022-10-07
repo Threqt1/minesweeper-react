@@ -3,22 +3,16 @@ interface MinesweeperCell {
   isBomb: boolean;
   isFlagged: boolean;
   minesNear: number;
+  seed: number;
 }
 
-export interface MinesweeperBoard {
+export type MinesweeperBoard = {
+  board: MinesweeperCell[];
   height: number;
   width: number;
   mines: number;
-  board: MinesweeperCell[];
-  index: (this: MinesweeperBoard, x: number, y: number) => number;
-  get: (this: MinesweeperBoard, x: number, y: number) => MinesweeperCell;
-  set: (
-    this: MinesweeperBoard,
-    x: number,
-    y: number,
-    newProps: Partial<MinesweeperCell>
-  ) => MinesweeperCell;
-}
+  generated: boolean;
+};
 
 /*
 Create an empty board with default values that will provide bare minimum for displaying.
@@ -30,43 +24,45 @@ export function CreateBoard(
   mines: number
 ): MinesweeperBoard {
   let board: MinesweeperBoard = {
+    board: new Array(sizeX * sizeY),
     height: sizeY,
     width: sizeX,
     mines,
-    board: new Array(sizeX * sizeY),
-    index: function (this: MinesweeperBoard, x: number, y: number) {
-      return y * this.height + x;
-    },
-    get: function (this: MinesweeperBoard, x: number, y: number) {
-      return this.board[y * this.height + x];
-    },
-    set: function (
-      this: MinesweeperBoard,
-      x: number,
-      y: number,
-      newProps: Partial<MinesweeperCell>
-    ) {
-      this.board[y * this.height + x] = Object.assign(
-        this.get(x, y) ?? {},
-        newProps
-      );
-      return this.get(x, y);
-    },
+    generated: false,
   };
-  board.index = board.index.bind(board);
-  board.get = board.get.bind(board);
-  board.set = board.set.bind(board);
   for (let y = 0; y < sizeY; y++) {
+    let startSeed = y % 2;
     for (let x = 0; x < sizeX; x++) {
-      board.set(x, y, {
+      setCoordOnBoard(board, x, y, {
         isFlipped: false,
         isBomb: false,
         isFlagged: false,
         minesNear: -1,
+        seed: startSeed++,
       });
     }
   }
   return board;
+}
+
+export function getCoordFromBoard(
+  board: MinesweeperBoard,
+  x: number,
+  y: number
+) {
+  return board.board[y * board.width + x];
+}
+
+export function setCoordOnBoard(
+  board: MinesweeperBoard,
+  x: number,
+  y: number,
+  props: Partial<MinesweeperCell>
+) {
+  board.board[y * board.width + x] = Object.assign(
+    getCoordFromBoard(board, x, y) ?? {},
+    props
+  );
 }
 
 const dX = [-1, -1, -1, 0, 1, 1, 1, 0];
@@ -80,59 +76,117 @@ export function GenerateBoard(
   clickX: number,
   clickY: number
 ) {
+  let editBoard: MinesweeperBoard = {
+    board: board.board.slice(),
+    height: board.height,
+    width: board.width,
+    mines: board.mines,
+    generated: true,
+  };
   let possibleIndexes: number[][] = [];
-  for (let y = 0; y < board.height; y++) {
+  for (let y = 0; y < editBoard.height; y++) {
     possibleIndexes[y] = [];
-    for (let x = 0; x < board.width; x++) {
+    for (let x = 0; x < editBoard.width; x++) {
       possibleIndexes[y].push(x);
     }
   }
   /* Remove Top 3 Above */
   if (clickY - 1 >= 0) {
     let startX = Math.max(0, clickX - 1);
-    let endX = Math.min(board.width - 1, clickX + 1);
+    let endX = Math.min(editBoard.width - 1, clickX + 1);
     possibleIndexes[clickY - 1].splice(startX, endX - startX + 1);
   }
-  /* Remove 1 Left, 1 Right */
-  if (clickX - 1 >= 0) {
-    possibleIndexes[clickY].splice(clickX - 1, 1);
-  }
-  if (clickX + 1 < board.width) {
-    possibleIndexes[clickY].splice(clickX + 1, 1);
-  }
+  /* Remove 1 Left, Middle, 1 Right */
+  let startXt = Math.max(0, clickX - 1);
+  let endXt = Math.min(editBoard.width - 1, clickX + 1);
+  possibleIndexes[clickY].splice(startXt, endXt - startXt + 1);
   /* Remove 3 on Bottom */
-  if (clickY + 1 < board.height) {
+  if (clickY + 1 < editBoard.height) {
     let startX = Math.max(0, clickX - 1);
-    let endX = Math.min(board.width - 1, clickX + 1);
+    let endX = Math.min(editBoard.width - 1, clickX + 1);
     possibleIndexes[clickY + 1].splice(startX, endX - startX + 1);
   }
-  let minesNeeded = board.mines;
+  let minesNeeded = editBoard.mines;
   while (minesNeeded > 0) {
     let randomY = (Math.random() * possibleIndexes.length) | 0;
     let randomXIndex = (Math.random() * possibleIndexes[randomY].length) | 0;
     let randomX = possibleIndexes[randomY].splice(randomXIndex, 1)[0];
     if (possibleIndexes[randomY].length === 0)
       possibleIndexes.splice(randomY, 1);
-    board.set(randomX, randomY, {
+    setCoordOnBoard(editBoard, randomX, randomY, {
       isBomb: true,
       minesNear: -1,
     });
     minesNeeded--;
   }
-  for (let y = 0; y < board.height; y++) {
-    for (let x = 0; x < board.width; x++) {
-      if (!board.get(x, y).isBomb) {
+  for (let y = 0; y < editBoard.height; y++) {
+    for (let x = 0; x < editBoard.width; x++) {
+      if (!getCoordFromBoard(editBoard, x, y).isBomb) {
         let minesNear = 0;
         for (let i = 0; i < dX.length; i++) {
           let tX = x + dX[i];
           let tY = y + dY[i];
-          if (tX > 0 && tX < board.width && tY > 0 && tY < board.height) {
-            if (board.get(tX, tY).isBomb) minesNear++;
+          if (
+            tX >= 0 &&
+            tX < editBoard.width &&
+            tY >= 0 &&
+            tY < editBoard.height
+          ) {
+            if (getCoordFromBoard(editBoard, tX, tY).isBomb) minesNear++;
           }
         }
-        board.set(x, y, { minesNear });
+        setCoordOnBoard(editBoard, x, y, { minesNear });
       }
     }
   }
-  return board;
+  return HandleBoardClick(editBoard, clickX, clickY);
+}
+
+/* Utility recursion function that mutates board */
+function HandleBoardClick_Mut(
+  board: MinesweeperBoard,
+  x: number,
+  y: number,
+  visited: boolean[]
+) {
+  if (visited[y * board.width + x] === true) return;
+  visited[y * board.width + x] = true;
+  let coord = getCoordFromBoard(board, x, y);
+  if (coord.isBomb) return;
+  setCoordOnBoard(board, x, y, { isFlipped: true });
+  if (coord.minesNear > 0) return;
+  for (let i = 0; i < dX.length; i += 1) {
+    let tX = x + dX[i];
+    let tY = y + dY[i];
+    if (tX >= 0 && tX < board.width && tY >= 0 && tY < board.height) {
+      HandleBoardClick_Mut(board, tX, tY, visited);
+    }
+  }
+
+  return;
+}
+
+/*
+Returns false if the tile was a bomb, else propogates and returns true
+*/
+export function HandleBoardClick(
+  board: MinesweeperBoard,
+  x: number,
+  y: number
+): MinesweeperBoard {
+  if (board.generated === false) return GenerateBoard(board, x, y);
+  let editBoard: MinesweeperBoard = {
+    board: board.board.slice(),
+    height: board.height,
+    width: board.width,
+    mines: board.mines,
+    generated: true,
+  };
+  let coord = getCoordFromBoard(editBoard, x, y);
+  if (coord.isBomb) return editBoard;
+  setCoordOnBoard(editBoard, x, y, { isFlipped: true });
+  if (coord.minesNear > 0) return editBoard;
+  let visited = new Array(editBoard.width * editBoard.height).fill(false);
+  HandleBoardClick_Mut(editBoard, x, y, visited);
+  return editBoard;
 }

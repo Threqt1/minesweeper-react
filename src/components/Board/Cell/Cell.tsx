@@ -9,9 +9,13 @@ interface CellProps {
   seed: number;
 }
 
-const Cell = (props: { info: CellProps }) => {
+const Cell = (props: {
+  info: CellProps;
+  onClick: React.MouseEventHandler<HTMLDivElement>;
+}) => {
   return (
     <div
+      onClick={props.onClick}
       className={`cell ${
         props.info.isFlipped
           ? props.info.isBomb
@@ -22,14 +26,11 @@ const Cell = (props: { info: CellProps }) => {
           : `hidden-${props.info.seed % 2}`
       } `}
     >
-      {props.info.minesNear > 0 ? props.info.minesNear : ""}
+      {props.info.minesNear > 0 && props.info.isFlipped
+        ? props.info.minesNear
+        : ""}
     </div>
   );
 };
 
-export default memo(Cell, (prevProps, nextProps) => {
-  return (
-    prevProps.info.isFlagged === nextProps.info.isFlagged &&
-    prevProps.info.isFlipped === nextProps.info.isFlipped
-  );
-});
+export default Cell;
