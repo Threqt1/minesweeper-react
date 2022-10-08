@@ -1,33 +1,32 @@
 import { useEffect, useState } from "react";
+
+import ResizeText from "../ResizeText";
+import Cell from "./Cell";
+
+import { Difficulties, Difficulty } from "../../data/difficulties";
 import {
-  Difficulties,
-  Difficulty,
-  DifficultyInfo,
-} from "../../data/difficulties";
-import {
-  CreateBoard,
   getCoordFromBoard,
   HandleBoardClick,
+  HandleBoardFlag,
   MinesweeperBoard,
 } from "../../game/Board";
-import ResizeText from "../ResizeText";
+import { WindowDimensions } from "../App/App";
+import { CellElementProps } from "./Cell/Cell";
+
 import "./Board.scss";
-import Cell from "./Cell";
 
 function ConstructRow(
   board: MinesweeperBoard,
   y: number,
-  handleClick: (x: number, y: number) => void,
-  fontSize: number
+  props: Omit<CellElementProps, "info">
 ) {
   let arr = [];
   for (let x = 0; x < board.width; x++) {
     arr.push(
       <Cell
-        info={getCoordFromBoard(board, x, y)}
+        info={{ ...getCoordFromBoard(board, x, y), x, y }}
         key={"cell-" + y + "-" + x}
-        onClick={() => handleClick(x, y)}
-        fontSize={fontSize}
+        {...props}
       />
     );
   }
@@ -36,92 +35,111 @@ function ConstructRow(
 
 function ConstructBoard(
   board: MinesweeperBoard,
-  handleClick: (x: number, y: number) => void,
-  fontSize: number
+  props: Omit<CellElementProps, "info">
 ) {
   let arr = [];
   for (let y = 0; y < board.height; y++) {
     arr.push(
       <div className="row" key={"row-" + y}>
-        {ConstructRow(board, y, handleClick, fontSize)}
+        {ConstructRow(board, y, props)}
       </div>
     );
   }
   return arr;
 }
 
-const determineSize = () => {
-  return window.innerHeight > window.innerWidth
-    ? window.innerWidth
-    : window.innerHeight;
-};
-
-const Board = (props: { difficulty: Difficulty }) => {
-  const [board, setBoard] = useState<MinesweeperBoard>(() =>
-    CreateBoard(
-      props.difficulty.boardSize.x,
-      props.difficulty.boardSize.y,
-      props.difficulty.mines
-    )
-  );
-
-  const [screenSize, setScreenSize] = useState<number>(() => determineSize());
-  const [fontSize, setFontSize] = useState<
-    Partial<Record<Difficulties, number>>
+const Board = (props: {
+  difficulty: Difficulty;
+  board: {
+    board: MinesweeperBoard;
+    setBoard: React.Dispatch<React.SetStateAction<MinesweeperBoard>>;
+  };
+  screenSize: WindowDimensions;
+}) => {
+  const [_fontSize, _setFontSize] = useState<
+    Partial<{
+      [key in `${Difficulties}_${keyof WindowDimensions}`]:
+        | number
+        | "width"
+        | "height";
+    }>
   >({});
 
-  useEffect(() => {
-    const ResizeHandler = new ResizeObserver((_, __) => {
-      setScreenSize(determineSize());
-    });
-    ResizeHandler.observe(document.body);
-
-    return () => ResizeHandler.disconnect();
-  }, []);
-
-  useEffect(() => {
-    if (!fontSize[props.difficulty.name]) {
-      fontSize[props.difficulty.name] = -1;
+  const setFontSize = (
+    difficulty: Difficulty | null,
+    info: WindowDimensions = { size: 0, type: "width" }
+  ) => {
+    if (difficulty === null || info.size <= 0) {
+      _setFontSize({});
+    } else {
+      _setFontSize((oldSizes) => {
+        let newProps = {
+          [`${difficulty.name}_size`]: info.size,
+          [`${difficulty.name}_type`]: info.type,
+        };
+        return { ...oldSizes, ...newProps };
+      });
     }
-    setBoard(
-      CreateBoard(
-        props.difficulty.boardSize.x,
-        props.difficulty.boardSize.y,
-        props.difficulty.mines
-      )
-    );
-  }, [props.difficulty.name]);
+  };
+
+  const fontSize = (
+    difficulty: Difficulty
+  ): {
+    size: number;
+    type: "width" | "height";
+  } => {
+    let size = _fontSize[`${difficulty.name}_size`] ?? 0;
+    let type = _fontSize[`${difficulty.name}_type`] ?? "width";
+    return { size: size as number, type: type as "width" | "height" };
+  };
 
   const HandleClick = (x: number, y: number) => {
-    let newBoard = HandleBoardClick(board, x, y);
-    setBoard(newBoard);
+    props.board.setBoard(HandleBoardClick(props.board.board, x, y).board);
   };
+
+  const HandleFlag = (x: number, y: number) => {
+    props.board.setBoard(HandleBoardFlag(props.board.board, x, y));
+  };
+
+  useEffect(() => {
+    if (fontSize(props.difficulty).size <= 0) {
+      setFontSize(props.difficulty, {
+        size: 0,
+        type: props.screenSize.type,
+      });
+    }
+  }, [props.difficulty.name]);
+
+  useEffect(() => {
+    setFontSize(null);
+  }, [props.screenSize.type]);
 
   return (
     <>
       <div
         className="board"
         style={{
-          width: 0.8 * screenSize,
+          width: 0.8 * props.screenSize.size,
         }}
       >
-        {ConstructBoard(
-          board!,
-          HandleClick,
-          (fontSize[props.difficulty.name] ?? -1) > -1
-            ? fontSize[props.difficulty.name]!
-            : 0
-        )}
+        {ConstructBoard(props.board.board, {
+          fontSize: fontSize(props.difficulty),
+          onClick: HandleClick,
+          onFlag: HandleFlag,
+        })}
       </div>
       {(() => {
-        if ((fontSize[props.difficulty.name] ?? -1) < 0) {
+        if (fontSize(props.difficulty).size <= 0) {
           return (
             <ResizeText
-              width={Math.floor(
-                (0.8 * screenSize) / props.difficulty.boardSize.x
-              )}
+              size={{
+                size: Math.floor(
+                  (0.8 * props.screenSize.size) / props.difficulty.boardSize.x
+                ),
+                type: props.screenSize.type,
+              }}
               setFontSize={setFontSize}
-              difficulty={props.difficulty.name}
+              difficulty={props.difficulty}
             />
           );
         }

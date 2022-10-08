@@ -1,7 +1,22 @@
 .cell {
   flex: 1;
   aspect-ratio: 1/1;
+  position: relative;
   cursor: pointer;
+
+  .flagAnimation {
+    width: 0%;
+    overflow: hidden;
+    transition: 0.1s width;
+
+    &.start {
+      width: 100%;
+    }
+
+    .flag {
+      display: block;
+    }
+  }
 }
 
 @mixin hidden_maker($color) {
@@ -31,7 +46,6 @@
   color: $color;
   font-family: "Roboto";
   font-weight: 900;
-  //font-size: 1px;
   display: flex;
   justify-content: center;
   align-items: center;

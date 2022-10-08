@@ -1,4 +1,5 @@
 import { useState } from "react";
+
 import clock from "../../../data/img/clock_icon.png";
 import "./TimeTracker.scss";
 

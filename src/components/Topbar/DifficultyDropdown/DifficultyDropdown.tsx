@@ -1,5 +1,7 @@
 import { useState } from "react";
+
 import { Difficulty, DifficultyList } from "../../../data/difficulties";
+
 import "./DifficultyDropdown.scss";
 
 type Visiblity = "hidden" | "visible";

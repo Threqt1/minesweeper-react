@@ -2,38 +2,24 @@ import DifficultyDropdown from "./DifficultyDropdown";
 import FlagTracker from "./FlagTracker";
 import TimeTracker from "./TimeTracker";
 import VolumeToggle from "./VolumeToggle";
-import "./Topbar.scss";
-import { Difficulty } from "../../data/difficulties";
-import { useEffect, useState } from "react";
 
-const determineSize = () => {
-  return window.innerHeight > window.innerWidth
-    ? window.innerWidth
-    : window.innerHeight;
-};
+import { Difficulty } from "../../data/difficulties";
+import { WindowDimensions } from "../App/App";
+
+import "./Topbar.scss";
 
 const Navbar = (props: {
   difficulty: {
     difficulty: Difficulty;
     setDifficulty: (difficulty: Difficulty) => void;
   };
+  screenSize: WindowDimensions;
+  flags: number;
 }) => {
-  const [screenSize, setScreenSize] = useState<number>(() => determineSize());
-  const updateScreenSize = (ev: UIEvent) =>
-    setScreenSize(() => determineSize());
-
-  useEffect(() => {
-    window.addEventListener("resize", updateScreenSize);
-
-    return () => {
-      window.removeEventListener("resize", updateScreenSize);
-    };
-  });
-
   return (
     <nav
       style={{
-        width: 0.8 * screenSize,
+        width: 0.8 * props.screenSize.size,
       }}
       className="topbar"
     >
@@ -44,7 +30,7 @@ const Navbar = (props: {
       </ul>
       <ul className="topbar-elem topbar-center">
         <li>
-          <FlagTracker />
+          <FlagTracker flags={props.flags} />
         </li>
         <li>
           <TimeTracker />
