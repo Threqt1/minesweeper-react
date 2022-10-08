@@ -1,6 +1,7 @@
 export type Difficulties = "Easy" | "Medium" | "Hard";
 
 export type Difficulty = {
+  name: Difficulties;
   boardSize: {
     x: number;
     y: number;
@@ -14,6 +15,7 @@ export type DifficultyInfo = {
 
 const DifficultyList: DifficultyInfo = {
   Easy: {
+    name: "Easy",
     boardSize: {
       x: 10,
       y: 8,
@@ -21,6 +23,7 @@ const DifficultyList: DifficultyInfo = {
     mines: 10,
   },
   Medium: {
+    name: "Medium",
     boardSize: {
       x: 18,
       y: 14,
@@ -28,6 +31,7 @@ const DifficultyList: DifficultyInfo = {
     mines: 40,
   },
   Hard: {
+    name: "Hard",
     boardSize: {
       x: 24,
       y: 20,

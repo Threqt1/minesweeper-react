@@ -1,4 +1,6 @@
-import { memo } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
+
+import FitText from "../../ResizeText";
 import "./Cell.scss";
 
 interface CellProps {
@@ -12,6 +14,7 @@ interface CellProps {
 const Cell = (props: {
   info: CellProps;
   onClick: React.MouseEventHandler<HTMLDivElement>;
+  fontSize: number;
 }) => {
   return (
     <div
@@ -24,11 +27,13 @@ const Cell = (props: {
                 props.info.minesNear > 0 ? `near-${props.info.minesNear}` : ``
               }`
           : `hidden-${props.info.seed % 2}`
-      } `}
+      }`}
     >
-      {props.info.minesNear > 0 && props.info.isFlipped
-        ? props.info.minesNear
-        : ""}
+      <span style={{ fontSize: `${props.fontSize}px` }}>
+        {props.info.minesNear > 0 && props.info.isFlipped
+          ? props.info.minesNear
+          : null}
+      </span>
     </div>
   );
 };

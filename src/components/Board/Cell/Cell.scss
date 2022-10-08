@@ -4,30 +4,40 @@
   cursor: pointer;
 }
 
+@mixin hidden_maker($color) {
+  background-color: $color;
+  &:hover {
+    background-color: rgb(185, 221, 119);
+  }
+}
+
 .hidden-0 {
-  background-color: rgb(170, 215, 81) !important;
+  @include hidden_maker(rgb(170, 215, 81));
 }
 
 .hidden-1 {
-  background-color: rgb(162, 209, 73) !important;
+  @include hidden_maker(rgb(162, 209, 73));
 }
 
 .flipped-0 {
-  background-color: rgb(229, 194, 159) !important;
+  background-color: rgb(229, 194, 159);
 }
 
 .flipped-1 {
-  background-color: rgb(215, 184, 153) !important;
+  background-color: rgb(215, 184, 153);
 }
 
 @mixin flipped_maker($color) {
-  color: $color !important;
+  color: $color;
   font-family: "Roboto";
   font-weight: 900;
-  font-size: 2.2vw;
+  //font-size: 1px;
   display: flex;
   justify-content: center;
   align-items: center;
+  &:hover {
+    background-color: rgb(236, 209, 183);
+  }
 }
 
 .near-1 {
@@ -67,11 +77,11 @@
 }
 
 @mixin mineMaker($color, $dark_color) {
-  background-color: $color !important;
+  background-color: $color;
 
   .mine_circle {
-    visibility: visible !important;
-    background-color: $dark_color !important;
+    visibility: visible;
+    background-color: $dark_color;
   }
 }
 

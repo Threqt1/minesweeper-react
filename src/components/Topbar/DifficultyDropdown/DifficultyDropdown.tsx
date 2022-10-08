@@ -1,12 +1,16 @@
 import { useState } from "react";
-import { Difficulties, DifficultyList } from "../../../data/difficulties";
+import { Difficulty, DifficultyList } from "../../../data/difficulties";
 import "./DifficultyDropdown.scss";
 
 type Visiblity = "hidden" | "visible";
 
-const DifficultyDropdown = (props: any) => {
+const DifficultyDropdown = (props: {
+  difficulty: {
+    difficulty: Difficulty;
+    setDifficulty: (difficulty: Difficulty) => void;
+  };
+}) => {
   const [display, setDisplay] = useState<Visiblity>("hidden");
-  const [difficulty, setDifficulty] = useState<Difficulties>("Easy");
 
   const toggleDropdownVisibility = (currVisibility: Visiblity) =>
     currVisibility === "hidden" ? "visible" : "hidden";
@@ -19,26 +23,30 @@ const DifficultyDropdown = (props: any) => {
           setDisplay(toggleDropdownVisibility);
         }}
       >
-        {difficulty}
+        {props.difficulty.difficulty.name}
       </button>
       <div className="difficultyOptions" style={{ visibility: display }}>
-        {(Object.keys(DifficultyList) as Difficulties[]).map(
+        {(Object.values(DifficultyList) as Difficulty[]).map(
           (currDifficulty) => (
             <div
               className="difficultyOption"
-              onClick={() => setDifficulty(currDifficulty)}
-              key={currDifficulty}
+              onClick={() => {
+                props.difficulty.setDifficulty(currDifficulty);
+                setDisplay(toggleDropdownVisibility);
+              }}
+              key={currDifficulty.name}
             >
               <span
                 className="difficultyCheckmark"
                 style={{
                   visibility:
-                    display === "visible" && difficulty === currDifficulty
+                    display === "visible" &&
+                    props.difficulty.difficulty.name === currDifficulty.name
                       ? "visible"
                       : "hidden",
                 }}
               ></span>
-              <span className="difficultyName">{currDifficulty}</span>
+              <span className="difficultyName">{currDifficulty.name}</span>
             </div>
           )
         )}
