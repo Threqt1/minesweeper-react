@@ -21,6 +21,7 @@
 
 @mixin hidden_maker($color) {
   background-color: $color;
+
   &:hover {
     background-color: rgb(185, 221, 119);
   }
@@ -42,6 +43,78 @@
   background-color: rgb(215, 184, 153);
 }
 
+.border-bottomLeft {
+  background-color: rgb(135, 175, 58);
+  position: absolute;
+  right: calc(100% - 4px);
+  top: calc(100% - 4px);
+  height: 4px;
+  width: 4px;
+}
+
+.border-topLeft {
+  background-color: rgb(135, 175, 58);
+  position: absolute;
+  right: calc(100% - 4px);
+  bottom: calc(100% - 4px);
+  height: 4px;
+  width: 4px;
+}
+
+.border-bottomRight {
+  background-color: rgb(135, 175, 58);
+  position: absolute;
+  left: calc(100% - 4px);
+  top: calc(100% - 4px);
+  height: 4px;
+  width: 4px;
+}
+
+.border-topRight {
+  background-color: rgb(135, 175, 58);
+  position: absolute;
+  left: calc(100% - 4px);
+  bottom: calc(100% - 4px);
+  height: 4px;
+  width: 4px;
+}
+
+.border-left {
+  background-color: rgb(135, 175, 58);
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 4px;
+}
+
+.border-right {
+  background-color: rgb(135, 175, 58);
+  position: absolute;
+  right: 0;
+  top: 0;
+  height: 100%;
+  width: 4px;
+}
+
+.border-top {
+  background-color: rgb(135, 175, 58);
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 4px;
+  width: 100%;
+}
+
+.border-bottom {
+  background-color: rgb(135, 175, 58);
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 4px;
+  width: 100%;
+}
+
 @mixin flipped_maker($color) {
   color: $color;
   font-family: "Roboto";
@@ -49,6 +122,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
+
   &:hover {
     background-color: rgb(236, 209, 183);
   }
@@ -90,7 +164,7 @@
   visibility: hidden;
 }
 
-@mixin mineMaker($color, $dark_color) {
+@mixin mine_maker($color, $dark_color) {
   background-color: $color;
 
   .mine_circle {
@@ -100,33 +174,33 @@
 }
 
 .mine-0 {
-  @include mineMaker(rgb(219, 50, 54), rgb(154, 33, 35));
+  @include mine_maker(rgb(219, 50, 54), rgb(154, 33, 35));
 }
 
 .mine-1 {
-  @include mineMaker(rgb(237, 68, 181), rgb(154, 44, 118));
+  @include mine_maker(rgb(237, 68, 181), rgb(154, 44, 118));
 }
 
 .mine-2 {
-  @include mineMaker(rgb(72, 133, 237), rgb(47, 86, 154));
+  @include mine_maker(rgb(72, 133, 237), rgb(47, 86, 154));
 }
 
 .mine-3 {
-  @include mineMaker(rgb(0, 135, 68), rgb(0, 88, 44));
+  @include mine_maker(rgb(0, 135, 68), rgb(0, 88, 44));
 }
 
 .mine-4 {
-  @include mineMaker(rgb(72, 230, 241), rgb(47, 150, 157));
+  @include mine_maker(rgb(72, 230, 241), rgb(47, 150, 157));
 }
 
 .mine-5 {
-  @include mineMaker(rgb(182, 72, 242), rgb(118, 47, 157));
+  @include mine_maker(rgb(182, 72, 242), rgb(118, 47, 157));
 }
 
 .mine-6 {
-  @include mineMaker(rgb(244, 194, 13), rgb(159, 126, 8));
+  @include mine_maker(rgb(244, 194, 13), rgb(159, 126, 8));
 }
 
 .mine-7 {
-  @include mineMaker(rgb(244, 132, 13), rgb(158, 86, 8));
+  @include mine_maker(rgb(244, 132, 13), rgb(158, 86, 8));
 }

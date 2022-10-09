@@ -1,10 +1,10 @@
-interface MinesweeperCell {
+export type MinesweeperCell = {
   isFlipped: boolean;
   isBomb: boolean;
   isFlagged: boolean;
   minesNear: number;
   seed: number;
-}
+};
 
 export type MinesweeperBoard = {
   board: MinesweeperCell[];
@@ -12,7 +12,11 @@ export type MinesweeperBoard = {
   width: number;
   flags: number;
   generated: boolean;
+  startedAt: number;
 };
+
+const dX = [-1, -1, -1, 0, 1, 1, 1, 0];
+const dY = [1, 0, -1, -1, -1, 0, 1, 1];
 
 /*
 Create an empty board with default values that will provide bare minimum for displaying.
@@ -29,6 +33,7 @@ export function CreateBoard(
     width: sizeX,
     flags,
     generated: false,
+    startedAt: -1,
   };
   for (let y = 0; y < sizeY; y++) {
     let startSeed = y % 2;
@@ -65,9 +70,6 @@ export function setCoordOnBoard(
   };
 }
 
-const dX = [-1, -1, -1, 0, 1, 1, 1, 0];
-const dY = [-1, 0, 1, 1, 1, 0, -1, -1];
-
 /*
 Populate the board based on the first click
 */
@@ -82,6 +84,7 @@ export function GenerateBoard(
     width: board.width,
     flags: board.flags,
     generated: true,
+    startedAt: Date.now(),
   };
   let possibleIndexes: number[][] = [];
   for (let y = 0; y < editBoard.height; y++) {
@@ -189,6 +192,7 @@ export function HandleBoardClick(
     width: board.width,
     flags: board.flags,
     generated: true,
+    startedAt: board.startedAt,
   };
   let coord = getCoordFromBoard(editBoard, x, y);
   if (coord.isBomb)
@@ -225,6 +229,7 @@ export function HandleBoardFlag(board: MinesweeperBoard, x: number, y: number) {
     width: board.width,
     flags: board.flags,
     generated: board.generated,
+    startedAt: board.startedAt,
   };
   if (board.generated === false) return editBoard;
   let coord = getCoordFromBoard(editBoard, x, y);
@@ -234,4 +239,42 @@ export function HandleBoardFlag(board: MinesweeperBoard, x: number, y: number) {
   else editBoard.flags += 1;
   setCoordOnBoard(editBoard, x, y, { isFlagged: !coord.isFlagged });
   return editBoard;
+}
+
+export enum BorderInfo {
+  BOTTOM_LEFT = "bottomLeft",
+  LEFT = "left",
+  TOP_LEFT = "topLeft",
+  TOP = "top",
+  TOP_RIGHT = "topRight",
+  RIGHT = "right",
+  BOTTOM_RIGHT = "bottomRight",
+  BOTTOM = "bottom",
+}
+
+/*
+Determine borders for a cell on a board
+*/
+export function HandleCellBorders(
+  board: MinesweeperBoard,
+  x: number,
+  y: number
+) {
+  let borderInfo: Partial<{
+    [key in BorderInfo]: boolean;
+  }> = {};
+
+  for (let i = 0; i < dX.length; i++) {
+    let tX = x + dX[i];
+    let tY = y + dY[i];
+
+    if (tX >= 0 && tX < board.width && tY >= 0 && tY < board.height) {
+      let cell = getCoordFromBoard(board, tX, tY);
+      if (!cell.isFlipped) {
+        borderInfo[Object.values(BorderInfo)[i]] = true;
+      }
+    }
+  }
+
+  return borderInfo;
 }

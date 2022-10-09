@@ -58,6 +58,7 @@ const App = () => {
         }}
         screenSize={screenSize}
         flags={board.flags}
+        started={board.generated}
       />
       <Board
         difficulty={difficulty}

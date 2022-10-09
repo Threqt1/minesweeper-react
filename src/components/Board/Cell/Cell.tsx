@@ -1,19 +1,18 @@
 import { useRef } from "react";
 
+import { BorderInfo, MinesweeperCell } from "../../../game/Board";
 import { WindowDimensions } from "../../App/App";
 
 import flag from "../../../data/img/flag_icon.png";
 import "./Cell.scss";
 
-interface CellProps {
+export type CellProps = MinesweeperCell & {
   x: number;
   y: number;
-  isFlagged: boolean;
-  isFlipped: boolean;
-  isBomb: boolean;
-  minesNear: number;
-  seed: number;
-}
+  borderInfo: Partial<{
+    [key in BorderInfo]: boolean;
+  }>;
+};
 
 export type CellElementProps = {
   info: CellProps;
@@ -47,6 +46,21 @@ const Cell = (props: CellElementProps) => {
       }`}
     >
       <>
+        <div className="borders">
+          {(() => {
+            if (props.info.isFlipped) {
+              return Object.entries(props.info.borderInfo).map(
+                ([dir, needed]) =>
+                  needed ? (
+                    <div
+                      className={`border-${dir}`}
+                      key={`border-${dir}`}
+                    ></div>
+                  ) : null
+              );
+            }
+          })()}
+        </div>
         <div className={`flagAnimation ${props.info.isFlagged ? "start" : ""}`}>
           {(() => {
             if (props.info.isFlagged) {

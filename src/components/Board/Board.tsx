@@ -8,6 +8,7 @@ import {
   getCoordFromBoard,
   HandleBoardClick,
   HandleBoardFlag,
+  HandleCellBorders,
   MinesweeperBoard,
 } from "../../game/Board";
 import { WindowDimensions } from "../App/App";
@@ -24,8 +25,13 @@ function ConstructRow(
   for (let x = 0; x < board.width; x++) {
     arr.push(
       <Cell
-        info={{ ...getCoordFromBoard(board, x, y), x, y }}
-        key={"cell-" + y + "-" + x}
+        info={{
+          ...getCoordFromBoard(board, x, y),
+          x,
+          y,
+          borderInfo: HandleCellBorders(board, x, y),
+        }}
+        key={"y" + y + "-x" + x}
         {...props}
       />
     );
