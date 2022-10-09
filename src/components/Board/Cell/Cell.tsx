@@ -46,6 +46,11 @@ const Cell = (props: CellElementProps) => {
       }`}
     >
       <>
+        {(() => {
+          if (props.info.isFlipped && props.info.isBomb) {
+            return <div className="mineCircle"></div>;
+          }
+        })()}
         <div className="borders">
           {(() => {
             if (props.info.isFlipped) {

@@ -8,6 +8,7 @@ export type MinesweeperCell = {
 
 export type MinesweeperBoard = {
   board: MinesweeperCell[];
+  unflippedTiles: number;
   height: number;
   width: number;
   flags: number;
@@ -27,8 +28,10 @@ export function CreateBoard(
   sizeY: number,
   flags: number
 ): MinesweeperBoard {
+  let boardSize = sizeX * sizeY;
   let board: MinesweeperBoard = {
-    board: new Array(sizeX * sizeY),
+    board: new Array(boardSize),
+    unflippedTiles: boardSize - flags,
     height: sizeY,
     width: sizeX,
     flags,
@@ -80,6 +83,7 @@ export function GenerateBoard(
 ) {
   let editBoard: MinesweeperBoard = {
     board: board.board.slice(),
+    unflippedTiles: board.unflippedTiles,
     height: board.height,
     width: board.width,
     flags: board.flags,
@@ -156,14 +160,25 @@ function HandleBoardClick_Mut(
   visited[y * board.width + x] = true;
   let coord = getCoordFromBoard(board, x, y);
   if (coord.isBomb) return;
-  if (coord.isFlagged) board.flags++;
+  if (coord.isFlagged) board.flags += 1;
   setCoordOnBoard(board, x, y, { isFlipped: true, isFlagged: false });
-  if (coord.minesNear > 0) return;
-  for (let i = 0; i < dX.length; i += 1) {
-    let tX = x + dX[i];
-    let tY = y + dY[i];
-    if (tX >= 0 && tX < board.width && tY >= 0 && tY < board.height) {
-      HandleBoardClick_Mut(board, tX, tY, visited);
+  board.unflippedTiles -= 1;
+  if (coord.minesNear > 0) {
+    for (let i = 1; i < dX.length; i += 2) {
+      let tX = x + dX[i];
+      let tY = y + dY[i];
+      if (tX >= 0 && tX < board.width && tY >= 0 && tY < board.height) {
+        if (getCoordFromBoard(board, tX, tY).minesNear <= 0)
+          HandleBoardClick_Mut(board, tX, tY, visited);
+      }
+    }
+  } else {
+    for (let i = 0; i < dX.length; i += 1) {
+      let tX = x + dX[i];
+      let tY = y + dY[i];
+      if (tX >= 0 && tX < board.width && tY >= 0 && tY < board.height) {
+        HandleBoardClick_Mut(board, tX, tY, visited);
+      }
     }
   }
 
@@ -188,6 +203,7 @@ export function HandleBoardClick(
   if (board.generated === false) board = GenerateBoard(board, x, y);
   let editBoard: MinesweeperBoard = {
     board: board.board.slice(),
+    unflippedTiles: board.unflippedTiles,
     height: board.height,
     width: board.width,
     flags: board.flags,
@@ -195,18 +211,14 @@ export function HandleBoardClick(
     startedAt: board.startedAt,
   };
   let coord = getCoordFromBoard(editBoard, x, y);
-  if (coord.isBomb)
+  if (coord.isBomb) {
+    //setCoordOnBoard(editBoard, x, y, { isFlipped: true });
     return {
       board: editBoard,
       code: CLICK_RETURN_VALUES.FAIL,
     };
+  }
   if (coord.isFlagged)
-    return {
-      board: editBoard,
-      code: CLICK_RETURN_VALUES.SUCCESS,
-    };
-  setCoordOnBoard(editBoard, x, y, { isFlipped: true });
-  if (coord.minesNear > 0)
     return {
       board: editBoard,
       code: CLICK_RETURN_VALUES.SUCCESS,
@@ -225,6 +237,7 @@ Flags the cell at (x, y)
 export function HandleBoardFlag(board: MinesweeperBoard, x: number, y: number) {
   let editBoard: MinesweeperBoard = {
     board: board.board.slice(),
+    unflippedTiles: board.unflippedTiles,
     height: board.height,
     width: board.width,
     flags: board.flags,
@@ -235,8 +248,11 @@ export function HandleBoardFlag(board: MinesweeperBoard, x: number, y: number) {
   let coord = getCoordFromBoard(editBoard, x, y);
   if (coord.isFlipped) return editBoard;
   if (!coord.isFlagged && editBoard.flags <= 0) return editBoard;
-  if (!coord.isFlagged) editBoard.flags -= 1;
-  else editBoard.flags += 1;
+  if (!coord.isFlagged) {
+    editBoard.flags -= 1;
+  } else {
+    editBoard.flags += 1;
+  }
   setCoordOnBoard(editBoard, x, y, { isFlagged: !coord.isFlagged });
   return editBoard;
 }
@@ -264,13 +280,16 @@ export function HandleCellBorders(
     [key in BorderInfo]: boolean;
   }> = {};
 
+  let coord = getCoordFromBoard(board, x, y);
+  if (coord.isBomb && coord.isFlipped) return borderInfo;
+
   for (let i = 0; i < dX.length; i++) {
     let tX = x + dX[i];
     let tY = y + dY[i];
 
     if (tX >= 0 && tX < board.width && tY >= 0 && tY < board.height) {
       let cell = getCoordFromBoard(board, tX, tY);
-      if (!cell.isFlipped) {
+      if (!cell.isFlipped || (cell.isFlipped && cell.isBomb)) {
         borderInfo[Object.values(BorderInfo)[i]] = true;
       }
     }

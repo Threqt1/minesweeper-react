@@ -7,7 +7,7 @@
   .flagAnimation {
     width: 0%;
     overflow: hidden;
-    transition: 0.1s width;
+    transition: 0.15s width;
 
     &.start {
       width: 100%;
@@ -165,10 +165,16 @@
 }
 
 @mixin mine_maker($color, $dark_color) {
+  position: relative;
   background-color: $color;
 
-  .mine_circle {
-    visibility: visible;
+  .mineCircle {
+    position: absolute;
+    width: 50%;
+    height: 50%;
+    left: 25%;
+    top: 25%;
+    border-radius: 50%;
     background-color: $dark_color;
   }
 }
