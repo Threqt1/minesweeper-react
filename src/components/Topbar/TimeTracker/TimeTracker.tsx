@@ -1,28 +1,36 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import clock from "../../../data/img/clock_icon.png";
 import "./TimeTracker.scss";
 
-const TimeTracker = (props: { started: boolean }) => {
+const TimeTracker = (props: { status: "start" | "in_progress" | "done" }) => {
   const [time, setTime] = useState(0);
+  let interval = useRef<number>();
 
   const tick = () => {
     setTime((oldTime) => oldTime + 1);
   };
 
-  let interval: number;
-
   useEffect(() => {
-    setTime(0);
-    if (props.started) {
-      interval = setInterval(() => tick(), 1000);
-      return () => clearInterval(interval);
+    switch (props.status) {
+      case "start":
+        setTime(0);
+        break;
+      case "in_progress":
+        interval.current = setInterval(() => tick(), 1000);
+        break;
+      case "done":
+        if (interval.current && interval.current > -1)
+          clearInterval(interval.current);
+        break;
     }
-  }, [props.started]);
+    return () => clearInterval(interval.current);
+  }, [props.status]);
 
   useEffect(() => {
     if (time >= 999) {
-      clearInterval(interval);
+      clearInterval(interval.current);
+      interval.current = -1;
     }
   }, [time]);
 

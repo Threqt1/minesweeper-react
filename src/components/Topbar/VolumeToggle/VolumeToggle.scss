@@ -1,6 +1,12 @@
 .volumeToggle {
   .volumeImage {
+    top: 0;
+    left: 0;
     width: 38px;
     height: 38px;
+    cursor: pointer;
+    position: relative;
+    z-index: 2;
+    opacity: 1;
   }
 }

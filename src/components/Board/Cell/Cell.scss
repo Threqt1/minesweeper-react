@@ -12,35 +12,51 @@
     &.start {
       width: 100%;
     }
+  }
 
-    .flag {
-      display: block;
-    }
+  .cellImage {
+    display: block;
   }
 }
 
-@mixin hidden_maker($color) {
-  background-color: $color;
+@mixin hidden_maker($h, $s, $l) {
+  background-color: hsl($h, $s, $l);
 
   &:hover {
-    background-color: rgb(185, 221, 119);
+    background-color: hsl($h, $s, calc($l + 12%));
+  }
+
+  &.highlighted {
+    background-color: hsl($h, $s, calc($l + 12%));
   }
 }
 
 .hidden-0 {
-  @include hidden_maker(rgb(170, 215, 81));
+  @include hidden_maker(80, 63%, 58%);
 }
 
 .hidden-1 {
-  @include hidden_maker(rgb(162, 209, 73));
+  @include hidden_maker(81, 60%, 55%);
+}
+
+@mixin flipped_maker($h, $s, $l) {
+  background-color: hsl($h, $s, $l);
+
+  &:hover {
+    background-color: hsl($h, $s, calc($l + 12%));
+  }
+
+  &[data-minesnear="0"] {
+    background-color: hsl($h, $s, $l);
+  }
 }
 
 .flipped-0 {
-  background-color: rgb(229, 194, 159);
+  @include flipped_maker(30, 57%, 76%);
 }
 
 .flipped-1 {
-  background-color: rgb(215, 184, 153);
+  @include flipped_maker(30, 44%, 72%);
 }
 
 .border-bottomLeft {
@@ -122,10 +138,6 @@
   display: flex;
   justify-content: center;
   align-items: center;
-
-  &:hover {
-    background-color: rgb(236, 209, 183);
-  }
 }
 
 .near-1 {

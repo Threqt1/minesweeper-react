@@ -2,6 +2,7 @@ export type MinesweeperCell = {
   isFlipped: boolean;
   isBomb: boolean;
   isFlagged: boolean;
+  isWrong: boolean;
   minesNear: number;
   seed: number;
 };
@@ -12,8 +13,12 @@ export type MinesweeperBoard = {
   height: number;
   width: number;
   flags: number;
-  generated: boolean;
   startedAt: number;
+  status: "start" | "in_progress" | "done";
+  fail?: {
+    mines: [number, number][];
+    incorrectFlags: [number, number][];
+  };
 };
 
 const dX = [-1, -1, -1, 0, 1, 1, 1, 0];
@@ -35,8 +40,8 @@ export function CreateBoard(
     height: sizeY,
     width: sizeX,
     flags,
-    generated: false,
     startedAt: -1,
+    status: "start",
   };
   for (let y = 0; y < sizeY; y++) {
     let startSeed = y % 2;
@@ -45,6 +50,7 @@ export function CreateBoard(
         isFlipped: false,
         isBomb: false,
         isFlagged: false,
+        isWrong: false,
         minesNear: -1,
         seed: startSeed++,
       });
@@ -61,7 +67,7 @@ export function getCoordFromBoard(
   return board.board[y * board.width + x];
 }
 
-export function setCoordOnBoard(
+function setCoordOnBoard(
   board: MinesweeperBoard,
   x: number,
   y: number,
@@ -71,6 +77,51 @@ export function setCoordOnBoard(
     ...getCoordFromBoard(board, x, y),
     ...props,
   };
+}
+
+/*
+Flip a tile on the board without mutating it
+*/
+export function flipCoordOnBoard(
+  board: MinesweeperBoard,
+  x: number,
+  y: number
+) {
+  let editBoard: MinesweeperBoard = {
+    board: board.board.slice(),
+    unflippedTiles: board.unflippedTiles,
+    height: board.height,
+    width: board.width,
+    flags: board.flags,
+    startedAt: board.startedAt,
+    status: board.status,
+  };
+  setCoordOnBoard(editBoard, x, y, {
+    isFlipped: true,
+    isFlagged: false,
+  });
+  return editBoard;
+}
+
+export function markCoordWrongOnBoard(
+  board: MinesweeperBoard,
+  x: number,
+  y: number
+) {
+  let editBoard: MinesweeperBoard = {
+    board: board.board.slice(),
+    unflippedTiles: board.unflippedTiles,
+    height: board.height,
+    width: board.width,
+    flags: board.flags,
+    startedAt: board.startedAt,
+    status: board.status,
+  };
+  setCoordOnBoard(editBoard, x, y, {
+    isFlagged: false,
+    isWrong: true,
+  });
+  return editBoard;
 }
 
 /*
@@ -87,8 +138,8 @@ export function GenerateBoard(
     height: board.height,
     width: board.width,
     flags: board.flags,
-    generated: true,
     startedAt: Date.now(),
+    status: "in_progress",
   };
   let possibleIndexes: number[][] = [];
   for (let y = 0; y < editBoard.height; y++) {
@@ -185,10 +236,6 @@ function HandleBoardClick_Mut(
   return;
 }
 
-export enum CLICK_RETURN_VALUES {
-  SUCCESS,
-  FAIL,
-}
 /*
 Returns false if the tile was a bomb, else propogates and returns true
 */
@@ -198,36 +245,34 @@ export function HandleBoardClick(
   y: number
 ): {
   board: MinesweeperBoard;
-  code: CLICK_RETURN_VALUES;
+  code: "success" | "fail";
 } {
-  if (board.generated === false) board = GenerateBoard(board, x, y);
+  if (board.status === "start") board = GenerateBoard(board, x, y);
   let editBoard: MinesweeperBoard = {
     board: board.board.slice(),
     unflippedTiles: board.unflippedTiles,
     height: board.height,
     width: board.width,
     flags: board.flags,
-    generated: true,
     startedAt: board.startedAt,
+    status: board.status,
   };
   let coord = getCoordFromBoard(editBoard, x, y);
-  if (coord.isBomb) {
-    //setCoordOnBoard(editBoard, x, y, { isFlipped: true });
-    return {
-      board: editBoard,
-      code: CLICK_RETURN_VALUES.FAIL,
-    };
-  }
   if (coord.isFlagged)
     return {
       board: editBoard,
-      code: CLICK_RETURN_VALUES.SUCCESS,
+      code: "success",
+    };
+  if (coord.isBomb)
+    return {
+      board: editBoard,
+      code: "fail",
     };
   let visited = new Array(editBoard.width * editBoard.height).fill(false);
   HandleBoardClick_Mut(editBoard, x, y, visited);
   return {
     board: editBoard,
-    code: CLICK_RETURN_VALUES.SUCCESS,
+    code: "success",
   };
 }
 
@@ -241,10 +286,10 @@ export function HandleBoardFlag(board: MinesweeperBoard, x: number, y: number) {
     height: board.height,
     width: board.width,
     flags: board.flags,
-    generated: board.generated,
     startedAt: board.startedAt,
+    status: board.status,
   };
-  if (board.generated === false) return editBoard;
+  if (board.status === "start") return editBoard;
   let coord = getCoordFromBoard(editBoard, x, y);
   if (coord.isFlipped) return editBoard;
   if (!coord.isFlagged && editBoard.flags <= 0) return editBoard;
@@ -296,4 +341,120 @@ export function HandleCellBorders(
   }
 
   return borderInfo;
+}
+
+/*
+Determine cells to be highlighted when right click + left click on a flipped cell
+*/
+export function HandleBoardPeeks(
+  board: MinesweeperBoard,
+  x: number,
+  y: number
+) {
+  let coord = getCoordFromBoard(board, x, y);
+  if (!coord.isFlipped) return null;
+  let alreadyMatched = 0;
+  let toHighlight: {
+    cells: { [key: `${number},${number}`]: boolean };
+    shouldFlip: boolean;
+  } = {
+    cells: {},
+    shouldFlip: false,
+  };
+
+  for (let i = 0; i < dX.length; i++) {
+    let tX = x + dX[i];
+    let tY = y + dY[i];
+
+    if (tX >= 0 && tX < board.width && tY >= 0 && tY < board.height) {
+      let nextCoord = getCoordFromBoard(board, tX, tY);
+
+      if (nextCoord.isFlagged) {
+        alreadyMatched++;
+      } else if (!nextCoord.isFlipped) {
+        toHighlight.cells[`${tX},${tY}`] = true;
+      }
+    }
+  }
+
+  toHighlight.shouldFlip = alreadyMatched === coord.minesNear;
+
+  return toHighlight;
+}
+
+/*
+Handle flipping tiles that were returned by the peek
+*/
+export function HandleBoardFlippingPeekCells(
+  board: MinesweeperBoard,
+  cells: { [key: `${number},${number}`]: boolean }
+) {
+  let editBoard: MinesweeperBoard = {
+    board: board.board.slice(),
+    unflippedTiles: board.unflippedTiles,
+    height: board.height,
+    width: board.width,
+    flags: board.flags,
+    startedAt: board.startedAt,
+    status: board.status,
+  };
+  for (let coord of Object.keys(cells)) {
+    let coords = coord.split(",");
+    let x = +coords[0];
+    let y = +coords[1];
+
+    let clickedBoard = HandleBoardClick(editBoard, x, y);
+    if (clickedBoard.code === "fail") return { ...clickedBoard, x, y };
+    else editBoard = clickedBoard.board;
+  }
+
+  return {
+    board: editBoard,
+    code: "success",
+    x: -1,
+    y: -1,
+  };
+}
+
+/*
+Generates the coordinate pairs for mines in the board (with the incorrect mine at the first index), list of incorrect flags, and sets the board as failed
+*/
+export function HandleBoardLoss(
+  board: MinesweeperBoard,
+  mineX: number,
+  mineY: number
+): MinesweeperBoard {
+  let editBoard: MinesweeperBoard = {
+    board: board.board.slice(),
+    unflippedTiles: board.unflippedTiles,
+    height: board.height,
+    width: board.width,
+    flags: board.flags,
+    startedAt: board.startedAt,
+    status: "done",
+  };
+  let mines: [number, number][] = [[mineX, mineY]];
+  let incorrectFlags: [number, number][] = [];
+
+  for (let y = 0; y < editBoard.height; y++) {
+    for (let x = 0; x < editBoard.width; x++) {
+      if (y === mineY && x === mineX) continue;
+      let coord = getCoordFromBoard(editBoard, x, y);
+      if (coord.isBomb) {
+        if (!coord.isFlagged) {
+          mines.push([x, y]);
+        }
+      } else if (coord.isFlagged) {
+        incorrectFlags.push([x, y]);
+      }
+    }
+  }
+
+  return {
+    ...editBoard,
+    fail: {
+      mines,
+      incorrectFlags,
+    },
+  };
 }

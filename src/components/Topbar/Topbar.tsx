@@ -15,12 +15,12 @@ const Navbar = (props: {
   };
   screenSize: WindowDimensions;
   flags: number;
-  started: boolean;
+  status: "start" | "in_progress" | "done";
 }) => {
   return (
     <nav
       style={{
-        width: 0.8 * props.screenSize.size,
+        width: props.screenSize.size,
       }}
       className="topbar"
     >
@@ -34,7 +34,7 @@ const Navbar = (props: {
           <FlagTracker flags={props.flags} />
         </li>
         <li>
-          <TimeTracker started={props.started} />
+          <TimeTracker status={props.status} />
         </li>
       </ul>
       <ul className="topbar-elem topbar-right">

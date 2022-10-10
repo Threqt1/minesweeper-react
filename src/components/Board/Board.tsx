@@ -8,6 +8,9 @@ import {
   getCoordFromBoard,
   HandleBoardClick,
   HandleBoardFlag,
+  HandleBoardFlippingPeekCells,
+  HandleBoardLoss,
+  HandleBoardPeeks,
   HandleCellBorders,
   MinesweeperBoard,
 } from "../../game/Board";
@@ -19,7 +22,10 @@ import "./Board.scss";
 function ConstructRow(
   board: MinesweeperBoard,
   y: number,
-  props: Omit<CellElementProps, "info">
+  props: Omit<CellElementProps, "info">,
+  peeks: {
+    [key: `${number},${number}`]: boolean;
+  }
 ) {
   let arr = [];
   for (let x = 0; x < board.width; x++) {
@@ -30,8 +36,9 @@ function ConstructRow(
           x,
           y,
           borderInfo: HandleCellBorders(board, x, y),
+          highlighted: peeks[`${x},${y}`] ?? false,
         }}
-        key={"y" + y + "-x" + x}
+        key={x + "," + y}
         {...props}
       />
     );
@@ -41,13 +48,16 @@ function ConstructRow(
 
 function ConstructBoard(
   board: MinesweeperBoard,
-  props: Omit<CellElementProps, "info">
+  props: Omit<CellElementProps, "info">,
+  peeks: {
+    [key: `${number},${number}`]: boolean;
+  }
 ) {
   let arr = [];
   for (let y = 0; y < board.height; y++) {
     arr.push(
       <div className="row" key={"row-" + y}>
-        {ConstructRow(board, y, props)}
+        {ConstructRow(board, y, props, peeks)}
       </div>
     );
   }
@@ -70,6 +80,10 @@ const Board = (props: {
         | "height";
     }>
   >({});
+
+  const [peeks, setPeeks] = useState<{
+    [key: `${number},${number}`]: boolean;
+  }>({});
 
   const setFontSize = (
     difficulty: Difficulty | null,
@@ -100,11 +114,40 @@ const Board = (props: {
   };
 
   const HandleClick = (x: number, y: number) => {
-    props.board.setBoard(HandleBoardClick(props.board.board, x, y).board);
+    let click = HandleBoardClick(props.board.board, x, y);
+    if (click.code === "fail") {
+      props.board.setBoard(HandleBoardLoss(click.board, x, y));
+    } else {
+      props.board.setBoard(click.board);
+    }
   };
 
   const HandleFlag = (x: number, y: number) => {
     props.board.setBoard(HandleBoardFlag(props.board.board, x, y));
+  };
+
+  const HandlePeekStart = (x: number, y: number) => {
+    let possiblePeeks = HandleBoardPeeks(props.board.board, x, y);
+    if (!possiblePeeks) return;
+    if (possiblePeeks.shouldFlip) {
+      let peekedBoard = HandleBoardFlippingPeekCells(
+        props.board.board,
+        possiblePeeks.cells
+      );
+      if (peekedBoard.code === "fail") {
+        props.board.setBoard(
+          HandleBoardLoss(peekedBoard.board, peekedBoard.x, peekedBoard.y)
+        );
+      } else {
+        props.board.setBoard(peekedBoard.board);
+      }
+    } else {
+      setPeeks(possiblePeeks.cells);
+    }
+  };
+
+  const HandlePeekEnd = () => {
+    setPeeks({});
   };
 
   useEffect(() => {
@@ -125,14 +168,20 @@ const Board = (props: {
       <div
         className="board"
         style={{
-          width: 0.8 * props.screenSize.size,
+          width: props.screenSize.size,
         }}
       >
-        {ConstructBoard(props.board.board, {
-          fontSize: fontSize(props.difficulty),
-          onClick: HandleClick,
-          onFlag: HandleFlag,
-        })}
+        {ConstructBoard(
+          props.board.board,
+          {
+            fontSize: fontSize(props.difficulty),
+            onClick: HandleClick,
+            onFlag: HandleFlag,
+            onPeekStart: HandlePeekStart,
+            onPeekEnd: HandlePeekEnd,
+          },
+          peeks
+        )}
       </div>
       {(() => {
         if (fontSize(props.difficulty).size <= 0) {
@@ -140,7 +189,7 @@ const Board = (props: {
             <ResizeText
               size={{
                 size: Math.floor(
-                  (0.8 * props.screenSize.size) / props.difficulty.boardSize.x
+                  props.screenSize.size / props.difficulty.boardSize.x
                 ),
                 type: props.screenSize.type,
               }}

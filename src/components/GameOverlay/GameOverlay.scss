@@ -1,0 +1,20 @@
+.gameOverlay {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100vw;
+  background-color: rgba(0, 0, 0, 0.7);
+  z-index: 1;
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.3s;
+
+  &.gameOver {
+    visibility: visible;
+  }
+
+  &.overlayOn {
+    opacity: 1;
+  }
+}
