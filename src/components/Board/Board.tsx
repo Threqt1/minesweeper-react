@@ -11,6 +11,7 @@ import {
   HandleBoardFlippingPeekCells,
   HandleBoardLoss,
   HandleBoardPeeks,
+  HandleBoardWin,
   HandleCellBorders,
   MinesweeperBoard,
 } from "../../game/Board";
@@ -158,6 +159,15 @@ const Board = (props: {
       });
     }
   }, [props.difficulty.name]);
+
+  useEffect(() => {
+    if (
+      props.board.board.status === "in_progress" &&
+      props.board.board.unflippedTiles === 0
+    ) {
+      props.board.setBoard(HandleBoardWin(props.board.board));
+    }
+  }, [props.board.board.unflippedTiles]);
 
   useEffect(() => {
     setFontSize(null);

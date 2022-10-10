@@ -9,6 +9,7 @@ import {
   flipCoordOnBoard,
   markCoordWrongOnBoard,
   MinesweeperBoard,
+  removeFlagOnBoard,
 } from "../../game/Board";
 
 import "./App.scss";
@@ -87,6 +88,7 @@ const App = () => {
           );
           clmnTime += Math.random() * 550;
         }
+        clmnTime += Math.random() * 600;
         for (let flag of board.fail.incorrectFlags) {
           boardAnimationTimeouts.current.animationTimeouts.push(
             setTimeout(() => {
@@ -104,6 +106,26 @@ const App = () => {
         boardAnimationTimeouts.current.overlayOnTimeout = setTimeout(() => {
           setOverlayStatus(true);
         }, clmnTime);
+      } else if (board.win) {
+        let clmnTime = 900;
+        for (let flag of board.win.correctFlags) {
+          boardAnimationTimeouts.current.animationTimeouts.push(
+            setTimeout(() => {
+              let newBoard = removeFlagOnBoard(
+                animBoardRef.current!,
+                flag[0],
+                flag[1]
+              );
+              animBoardRef.current = newBoard;
+              setBoard(newBoard);
+            }, clmnTime)
+          );
+          clmnTime += Math.random() * 200;
+        }
+        clmnTime += Math.random() * 200;
+        boardAnimationTimeouts.current.overlayOnTimeout = setTimeout(() => {
+          setOverlayStatus(true);
+        }, clmnTime);
       }
     }
   }, [board.status]);
@@ -117,6 +139,21 @@ const App = () => {
     return () => ResizeHandler.disconnect();
   }, []);
 
+  const RestartBoard = () => {
+    setOverlayStatus(false);
+    if (boardAnimationTimeouts.current.overlayOnTimeout)
+      clearTimeout(boardAnimationTimeouts.current.overlayOnTimeout);
+    for (let timeout of boardAnimationTimeouts.current.animationTimeouts)
+      clearTimeout(timeout);
+    setBoard(
+      CreateBoard(
+        difficulty.boardSize.x,
+        difficulty.boardSize.y,
+        difficulty.mines
+      )
+    );
+  };
+
   return (
     <div
       className="gameHolder"
@@ -125,9 +162,19 @@ const App = () => {
       }}
     >
       <GameOverlay
-        gameStatus={board.status}
+        game={{
+          status: board.status,
+          stats:
+            board.status === "done"
+              ? {
+                  duration: board.duration!,
+                  type: board.win ? "win" : "loss",
+                }
+              : undefined,
+        }}
         overlayStatus={overlayStatus}
-      ></GameOverlay>
+        onRestart={RestartBoard}
+      />
       <Board
         difficulty={difficulty}
         board={{ board, setBoard }}

@@ -19,15 +19,31 @@
   }
 }
 
+@keyframes hidden_flash {
+  from {
+    opacity: 0.4;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 @mixin hidden_maker($h, $s, $l) {
-  background-color: hsl($h, $s, $l);
+  $light-color: hsl($h, $s, calc($l + 12%));
+  $normal-color: hsl($h, $s, $l);
+
+  background-color: $normal-color;
 
   &:hover {
-    background-color: hsl($h, $s, calc($l + 12%));
+    background-color: $light-color;
   }
 
   &.highlighted {
-    background-color: hsl($h, $s, calc($l + 12%));
+    background-color: $light-color;
+  }
+
+  &.winFlash {
+    animation: hidden_flash 0.7s linear 0s 1 normal forwards;
   }
 }
 
@@ -40,14 +56,17 @@
 }
 
 @mixin flipped_maker($h, $s, $l) {
-  background-color: hsl($h, $s, $l);
+  $light-color: hsl($h, $s, calc($l + 12%));
+  $normal-color: hsl($h, $s, $l);
+
+  background-color: $normal-color;
 
   &:hover {
-    background-color: hsl($h, $s, calc($l + 12%));
+    background-color: $light-color;
   }
 
-  &[data-minesnear="0"] {
-    background-color: hsl($h, $s, $l);
+  &[data-minesnear="0"]:hover {
+    background-color: $normal-color;
   }
 }
 
@@ -57,6 +76,14 @@
 
 .flipped-1 {
   @include flipped_maker(30, 44%, 72%);
+}
+
+.win-0 {
+  background-color: hsl(206, 90%, 77%);
+}
+
+.win-1 {
+  background-color: hsl(207, 88%, 74%);
 }
 
 .border-bottomLeft {
@@ -135,9 +162,14 @@
   color: $color;
   font-family: "Roboto";
   font-weight: 900;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  position: absolute;
+  left: 25%;
+  opacity: 1;
+  transition: opacity 1s linear 0.7s;
+
+  &.hideText {
+    opacity: 0;
+  }
 }
 
 .near-1 {
@@ -176,9 +208,20 @@
   visibility: hidden;
 }
 
+@keyframes mine_animation {
+  from {
+    opacity: 0.4;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 @mixin mine_maker($color, $dark_color) {
   position: relative;
   background-color: $color;
+  opacity: 0;
+  animation: mine_animation 0.5s linear 0s 1 normal forwards;
 
   .mineCircle {
     position: absolute;

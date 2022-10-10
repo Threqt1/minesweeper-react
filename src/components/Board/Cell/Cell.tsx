@@ -33,6 +33,11 @@ const Cell = (props: CellElementProps) => {
     () => (
       <div
         ref={cellRef as any}
+        style={
+          props.info.win && !props.info.isBomb
+            ? { transition: `background-color 1s linear 0.7s` }
+            : undefined
+        }
         onMouseDown={(e) => {
           e.preventDefault();
           if (e.buttons === 1) {
@@ -62,12 +67,16 @@ const Cell = (props: CellElementProps) => {
           props.info.isFlipped
             ? props.info.isBomb
               ? `mine-${props.info.seed % 8}`
-              : `flipped-${props.info.seed % 2} ${
-                  props.info.minesNear > 0 ? `near-${props.info.minesNear}` : ``
-                }`
+              : `flipped-${props.info.seed % 2}`
             : `hidden-${props.info.seed % 2} ${
                 props.info.highlighted ? `highlighted` : ``
               }`
+        } ${
+          props.info.win
+            ? props.info.isBomb
+              ? `winFlash`
+              : `win-${props.info.seed % 2}`
+            : ``
         }`}
         data-minesnear={props.info.isFlipped ? props.info.minesNear : undefined}
       >
@@ -93,7 +102,7 @@ const Cell = (props: CellElementProps) => {
             })()}
           </div>
           {(() => {
-            if (props.info.isWrong) {
+            if (props.info.fail && props.info.fail.isWrongFlag) {
               return (
                 <img
                   className="cellImage"
@@ -138,6 +147,13 @@ const Cell = (props: CellElementProps) => {
                 props.fontSize.type === "width" ? "vw" : "vh"
               }`,
             }}
+            className={
+              props.info.minesNear > 0
+                ? `near-${props.info.minesNear} ${
+                    props.info.win ? `hideText` : ``
+                  }`
+                : undefined
+            }
           >
             {props.info.minesNear > 0 && props.info.isFlipped
               ? props.info.minesNear
