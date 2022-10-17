@@ -1,199 +1,255 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
-
-import Topbar from "../Topbar";
-import Board from "../Board";
-
-import { Difficulty, DifficultyList } from "../../data/difficulties";
 import {
+  useEffect,
+  useLayoutEffect,
+  useReducer,
+  useRef,
+  useState,
+} from "react";
+
+import { Difficulties, Minesweeper, Utility } from "../../types";
+
+import { DifficultyList } from "../../data/difficulties";
+import {
+  AnimateBoardLoss,
+  AnimateBoardWin,
+  ClickCell,
   CreateBoard,
-  flipCoordOnBoard,
-  markCoordWrongOnBoard,
-  MinesweeperBoard,
-  removeFlagOnBoard,
+  FlagCell,
+  GenerateCellPeeks,
+  SetBoardAsWon,
 } from "../../game/Board";
 
-import "./App.scss";
 import GameOverlay from "../GameOverlay";
+import Board from "../Board";
+import Topbar from "../Topbar";
 
-export const DEFAULT_DIFFICULTY = DifficultyList.Medium;
+import "./App.scss";
 
-export type WindowDimensions = {
-  size: number;
-  type: "width" | "height";
-};
-
-const determineSize = (): WindowDimensions => {
-  return window.innerHeight > window.innerWidth
-    ? { size: window.innerWidth * 0.8, type: "width" }
-    : { size: window.innerHeight * 0.8, type: "height" };
-};
-
+/**
+ * Represents the overarching app component
+ * @returns The app component
+ */
 const App = () => {
-  const [difficulty, setDifficulty] = useState<Difficulty>(DEFAULT_DIFFICULTY);
+  /* States */
 
-  const [board, setBoard] = useState<MinesweeperBoard>(() =>
-    CreateBoard(0, 0, 0)
+  /**
+   * The state for handling difficulty changing
+   */
+  const [difficulty, setDifficulty] = useState<Difficulties.Difficulty>(
+    DifficultyList.Medium
   );
 
+  /**
+   * The state for handling the board
+   */
+  const [board, updateBoard] = useReducer<
+    (
+      board: Minesweeper.Board,
+      update: Minesweeper.Events.BOARD_EVENT
+    ) => Minesweeper.Board,
+    null
+  >(boardReducer, null, () => CreateBoard({ width: 0, height: 0 }, 0));
+
+  /**
+   * The state for handling screen resizing
+   */
+  const [screenSize, setScreenSize] = useState<Utility.WindowDimensions>(() =>
+    DetermineWindowSize()
+  );
+
+  /**
+   * Whether the overlay should display or not
+   */
   const [overlayStatus, setOverlayStatus] = useState<boolean>(false);
 
-  const [screenSize, setScreenSize] = useState<WindowDimensions>(() =>
-    determineSize()
-  );
+  /* Refs */
 
-  const boardAnimationTimeouts = useRef<{
-    overlayOnTimeout: number | null;
+  /**
+   * Ref storing information about animation timeouts
+   */
+  const boardAnimationsRef = useRef<{
+    overlayToggleTimeout: number | null;
     animationTimeouts: number[];
   }>({
-    overlayOnTimeout: null,
+    overlayToggleTimeout: null,
     animationTimeouts: [],
   });
 
-  useEffect(() => {
-    if (boardAnimationTimeouts.current.overlayOnTimeout)
-      clearTimeout(boardAnimationTimeouts.current.overlayOnTimeout);
-    for (let timeout of boardAnimationTimeouts.current.animationTimeouts)
-      clearTimeout(timeout);
-    setBoard(
-      CreateBoard(
-        difficulty.boardSize.x,
-        difficulty.boardSize.y,
-        difficulty.mines
-      )
-    );
-  }, [difficulty.name]);
+  /**
+   * The ref to preserve the correct board reference across animations
+   */
+  const animationBoardRef = useRef<Minesweeper.Board>();
 
-  let animBoardRef = useRef<MinesweeperBoard>();
+  /* Effects */
 
-  useEffect(() => {
-    if (board.status === "done") {
-      if (boardAnimationTimeouts.current.overlayOnTimeout)
-        clearTimeout(boardAnimationTimeouts.current.overlayOnTimeout);
-      for (let timeout of boardAnimationTimeouts.current.animationTimeouts)
-        clearTimeout(timeout);
-      animBoardRef.current = board;
-      if (board.fail) {
-        let clmnTime = 0;
-        for (let mine of board.fail.mines) {
-          boardAnimationTimeouts.current.animationTimeouts.push(
-            setTimeout(() => {
-              let newBoard = flipCoordOnBoard(
-                animBoardRef.current!,
-                mine[0],
-                mine[1]
-              );
-              animBoardRef.current = newBoard;
-              setBoard(newBoard);
-            }, clmnTime)
-          );
-          clmnTime += Math.random() * 550;
-        }
-        clmnTime += Math.random() * 600;
-        for (let flag of board.fail.incorrectFlags) {
-          boardAnimationTimeouts.current.animationTimeouts.push(
-            setTimeout(() => {
-              let newBoard = markCoordWrongOnBoard(
-                animBoardRef.current!,
-                flag[0],
-                flag[1]
-              );
-              animBoardRef.current = newBoard;
-              setBoard(newBoard);
-            }, clmnTime)
-          );
-        }
-        clmnTime += 800 + Math.random() * 400;
-        boardAnimationTimeouts.current.overlayOnTimeout = setTimeout(() => {
-          setOverlayStatus(true);
-        }, clmnTime);
-      } else if (board.win) {
-        let clmnTime = 900;
-        for (let flag of board.win.correctFlags) {
-          boardAnimationTimeouts.current.animationTimeouts.push(
-            setTimeout(() => {
-              let newBoard = removeFlagOnBoard(
-                animBoardRef.current!,
-                flag[0],
-                flag[1]
-              );
-              animBoardRef.current = newBoard;
-              setBoard(newBoard);
-            }, clmnTime)
-          );
-          clmnTime += Math.random() * 200;
-        }
-        clmnTime += Math.random() * 200;
-        boardAnimationTimeouts.current.overlayOnTimeout = setTimeout(() => {
-          setOverlayStatus(true);
-        }, clmnTime);
-      }
-    }
-  }, [board.status]);
-
+  /**
+   * Setup effect to handle resizing the screen using the ResizeObserver
+   */
   useLayoutEffect(() => {
-    const ResizeHandler = new ResizeObserver((_, __) => {
-      setScreenSize(determineSize());
+    const ResizeHandler = new ResizeObserver(() => {
+      setScreenSize(DetermineWindowSize());
     });
     ResizeHandler.observe(document.body);
 
     return () => ResizeHandler.disconnect();
   }, []);
 
-  const RestartBoard = () => {
-    setOverlayStatus(false);
-    if (boardAnimationTimeouts.current.overlayOnTimeout)
-      clearTimeout(boardAnimationTimeouts.current.overlayOnTimeout);
-    for (let timeout of boardAnimationTimeouts.current.animationTimeouts)
+  /**
+   * Change board on difficulty change
+   */
+  useEffect(() => {
+    if (boardAnimationsRef.current.overlayToggleTimeout)
+      clearTimeout(boardAnimationsRef.current.overlayToggleTimeout);
+    for (let timeout of boardAnimationsRef.current.animationTimeouts) {
       clearTimeout(timeout);
-    setBoard(
-      CreateBoard(
-        difficulty.boardSize.x,
-        difficulty.boardSize.y,
-        difficulty.mines
-      )
-    );
-  };
+    }
+    setOverlayStatus(false);
+    updateBoard({
+      type: "SET_BOARD",
+      board: CreateBoard(difficulty.boardSize, difficulty.mines),
+    });
+  }, [difficulty]);
+
+  /**
+   * Check if the tiles are 0, if so, change board to won
+   */
+  useEffect(() => {
+    if (
+      board.status === Minesweeper.Status.IN_PROGRESS &&
+      board.unflippedTiles === 0
+    ) {
+      updateBoard({ type: "SET_BOARD", board: SetBoardAsWon(board) });
+    }
+  }, [board.unflippedTiles]);
+
+  /**
+   * Start board animations when board is won/loss
+   */
+  useEffect(() => {
+    if (board.status === Minesweeper.Status.DONE) {
+      if (boardAnimationsRef.current.overlayToggleTimeout)
+        clearTimeout(boardAnimationsRef.current.overlayToggleTimeout);
+      for (let timeout of boardAnimationsRef.current.animationTimeouts) {
+        clearTimeout(timeout);
+      }
+      boardAnimationsRef.current.animationTimeouts = [];
+      animationBoardRef.current = board;
+      if (board.fail) {
+        AnimateBoardLoss(
+          boardAnimationsRef,
+          board as Minesweeper.FailBoard,
+          setOverlayStatus,
+          animationBoardRef,
+          updateBoard
+        );
+      } else if (board.win) {
+        AnimateBoardWin(
+          boardAnimationsRef,
+          board as Minesweeper.WinBoard,
+          setOverlayStatus,
+          animationBoardRef,
+          updateBoard
+        );
+      }
+    }
+  }, [board.status]);
+
+  /* Other Functions */
+
+  /**
+   * Restart the board with a new difficulty
+   */
+  function RestartBoard() {
+    setDifficulty(() => {
+      return { ...difficulty };
+    });
+  }
+
+  /**
+   * Skip the modal wait
+   */
+  function SkipAnimation() {
+    if (boardAnimationsRef.current.overlayToggleTimeout)
+      clearTimeout(boardAnimationsRef.current.overlayToggleTimeout);
+    setOverlayStatus(true);
+  }
+
+  /* Render */
+
+  /* Stats for game overlay */
+  let stats: { duration: number; type: "win" | "loss" } | undefined;
+
+  if (board.status === Minesweeper.Status.DONE) {
+    stats = {
+      duration: board.timing.duration!,
+      type: board.fail ? "loss" : "win",
+    };
+  }
 
   return (
     <div
       className="gameHolder"
-      onContextMenu={(e) => {
-        e.preventDefault();
-      }}
+      onContextMenu={(e) =>
+        /*To prevent right click action*/
+        e.preventDefault()
+      }
     >
       <GameOverlay
         game={{
           status: board.status,
-          stats:
-            board.status === "done"
-              ? {
-                  duration: board.duration!,
-                  type: board.win ? "win" : "loss",
-                }
-              : undefined,
+          stats,
         }}
         overlayStatus={overlayStatus}
-        onRestart={RestartBoard}
+        functions={{
+          RestartBoard,
+          SkipAnimation,
+        }}
       />
       <Board
         difficulty={difficulty}
-        board={{ board, setBoard }}
-        screenSize={{
-          size: screenSize.size,
-          type: screenSize.type,
-        }}
+        board={{ board, updateBoard }}
+        windowSize={screenSize}
       />
       <Topbar
-        difficulty={{
-          difficulty,
-          setDifficulty,
-        }}
-        screenSize={screenSize}
+        difficulty={{ difficulty, setDifficulty }}
+        windowSize={screenSize}
         flags={board.flags}
         status={board.status}
       />
     </div>
   );
 };
+
+/**
+ * Calculates what the current window size is
+ * @returns A WindowDimensions object with the lowest size, scaled down, and the type
+ */
+function DetermineWindowSize(): Utility.WindowDimensions {
+  return window.innerHeight > window.innerWidth
+    ? { size: window.innerWidth * 0.8, type: "width" }
+    : { size: window.innerHeight * 0.8, type: "height" };
+}
+
+/**
+ * The reducer function for the board state
+ * @param board - The board's current state
+ * @param update - The update type and information
+ * @returns Updates board state
+ */
+function boardReducer(
+  board: Minesweeper.Board,
+  update: Minesweeper.Events.BOARD_EVENT
+): Minesweeper.Board {
+  switch (update.type) {
+    case "CLICK_CELL":
+      return ClickCell(board, update.coordinate);
+    case "FLAG_CELL":
+      return FlagCell(board, update.coordinate);
+    case "PEEK_CELL":
+      return GenerateCellPeeks(board, update.coordinate, update.hasEnded);
+    case "SET_BOARD":
+      return update.board;
+  }
+}
 
 export default App;

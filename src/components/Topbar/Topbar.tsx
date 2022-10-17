@@ -1,26 +1,32 @@
+import { Difficulties, Minesweeper, Utility } from "../../types";
+
 import DifficultyDropdown from "./DifficultyDropdown";
 import FlagTracker from "./FlagTracker";
 import TimeTracker from "./TimeTracker";
 import VolumeToggle from "./VolumeToggle";
 
-import { Difficulty } from "../../data/difficulties";
-import { WindowDimensions } from "../App/App";
-
 import "./Topbar.scss";
 
-const Navbar = (props: {
+interface TopbarProps {
   difficulty: {
-    difficulty: Difficulty;
-    setDifficulty: (difficulty: Difficulty) => void;
+    difficulty: Difficulties.Difficulty;
+    setDifficulty: React.Dispatch<
+      React.SetStateAction<Difficulties.Difficulty>
+    >;
   };
-  screenSize: WindowDimensions;
+  windowSize: Utility.WindowDimensions;
   flags: number;
-  status: "start" | "in_progress" | "done";
-}) => {
+  status: Minesweeper.Status;
+}
+
+/**
+ * Represents the bar on top of the field with information about the game
+ */
+const Topbar = (props: TopbarProps) => {
   return (
     <nav
       style={{
-        width: props.screenSize.size,
+        width: props.windowSize.size,
       }}
       className="topbar"
     >
@@ -46,4 +52,4 @@ const Navbar = (props: {
   );
 };
 
-export default Navbar;
+export default Topbar;

@@ -1,7 +1,11 @@
 import flag from "../../../data/img/flag_icon.png";
 import "./FlagTracker.scss";
 
-const FlagTrackers = (props: { flags: number }) => {
+interface FlagTrackerProps {
+  flags: number;
+}
+
+const FlagTracker = (props: FlagTrackerProps) => {
   return (
     <div className="flagTracker">
       <img className="flagImage" src={flag} />
@@ -10,4 +14,4 @@ const FlagTrackers = (props: { flags: number }) => {
   );
 };
 
-export default FlagTrackers;
+export default FlagTracker;

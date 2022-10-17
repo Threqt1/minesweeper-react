@@ -1,7 +1,7 @@
 import volume from "../../../data/img/volume_up.png";
 import "./VolumeToggle.scss";
 
-const VolumeToggle = (props: any) => {
+const VolumeToggle = () => {
   return (
     <div className="volumeToggle">
       <img src={volume} className="volumeImage" />

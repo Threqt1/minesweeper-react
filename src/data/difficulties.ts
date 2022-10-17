@@ -1,40 +1,30 @@
-export type Difficulties = "Easy" | "Medium" | "Hard";
+import { Difficulties } from "../types";
 
-export type Difficulty = {
-  name: Difficulties;
-  boardSize: {
-    x: number;
-    y: number;
-  };
-  mines: number;
-};
-
-export type DifficultyInfo = {
-  [key in Difficulties]: Difficulty;
-};
-
-const DifficultyList: DifficultyInfo = {
+/**
+ * A list of Difficulties that are registered in the game
+ */
+const DifficultyList: Difficulties.DifficultyInfo = {
   Easy: {
     name: "Easy",
     boardSize: {
-      x: 10,
-      y: 8,
+      width: 10,
+      height: 8,
     },
     mines: 10,
   },
   Medium: {
     name: "Medium",
     boardSize: {
-      x: 18,
-      y: 14,
+      width: 18,
+      height: 14,
     },
     mines: 40,
   },
   Hard: {
     name: "Hard",
     boardSize: {
-      x: 24,
-      y: 20,
+      width: 24,
+      height: 20,
     },
     mines: 99,
   },
