@@ -174,6 +174,15 @@ const App = () => {
     setOverlayStatus(true);
   }
 
+  /**
+   * Handle spacebar press (restarts the game)
+   */
+  function HandleSpaceBar(e: React.KeyboardEvent) {
+    if (e.code === "Space") {
+      RestartBoard();
+    }
+  }
+
   /* Render */
 
   /* Stats for game overlay */
@@ -193,6 +202,8 @@ const App = () => {
         /*To prevent right click action*/
         e.preventDefault()
       }
+      onKeyDown={HandleSpaceBar}
+      tabIndex={0}
     >
       <GameOverlay
         game={{
