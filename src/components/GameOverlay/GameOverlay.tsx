@@ -5,6 +5,7 @@ import trophy from "../../data/img/trophy_icon.png";
 import lose_screen from "../../data/img/lose_screen.png";
 import win_screen from "../../data/img/win_screen.png";
 import "./GameOverlay.scss";
+import { useMemo } from "react";
 
 interface GameOverlayProps {
   game: {
@@ -44,66 +45,69 @@ const GameOverlay = (props: GameOverlayProps) => {
 
   /* Render */
 
-  /* Add classes */
-  let className = "gameOverlay";
+  /* Wrap in useMemo for performance */
+  return useMemo(() => {
+    /* Add classes */
+    let className = "gameOverlay";
 
-  if (props.game.status === Minesweeper.Status.DONE) {
-    className += " gameOver";
-  }
-
-  if (props.overlayStatus === true) {
-    className += " overlayOn";
-  }
-
-  /* Handle middle modal */
-  let modal: JSX.Element | undefined;
-
-  if (props.overlayStatus === true && props.game.stats) {
-    let backgroundImage = "";
-    let time = "";
-    let bestTime = "–––";
-
-    if (props.game.stats.type === "win") {
-      backgroundImage = "url(" + win_screen + ")";
-      time = `${Math.min(
-        Math.floor(props.game.stats.duration / 1000),
-        999
-      )}`.padStart(3, "0");
-    } else {
-      backgroundImage = "url(" + lose_screen + ")";
-      time = "–––";
+    if (props.game.status === Minesweeper.Status.DONE) {
+      className += " gameOver";
     }
 
-    modal = (
-      <>
-        <div className="data" style={{ backgroundImage }}>
-          <div className="statHolder">
-            <div className="statDisplay">
-              <div className="statImage">
-                <img src={clock}></img>
+    if (props.overlayStatus === true) {
+      className += " overlayOn";
+    }
+
+    /* Handle middle modal */
+    let modal: JSX.Element | undefined;
+
+    if (props.overlayStatus === true && props.game.stats) {
+      let backgroundImage = "";
+      let time = "";
+      let bestTime = "–––";
+
+      if (props.game.stats.type === "win") {
+        backgroundImage = "url(" + win_screen + ")";
+        time = `${Math.min(
+          Math.floor(props.game.stats.duration / 1000),
+          999
+        )}`.padStart(3, "0");
+      } else {
+        backgroundImage = "url(" + lose_screen + ")";
+        time = "–––";
+      }
+
+      modal = (
+        <>
+          <div className="data" style={{ backgroundImage }}>
+            <div className="statHolder">
+              <div className="statDisplay">
+                <div className="statImage">
+                  <img src={clock}></img>
+                </div>
+                <span>{time}</span>
               </div>
-              <span>{time}</span>
-            </div>
-            <div className="statDisplay">
-              <div className="statImage">
-                <img src={trophy}></img>
+              <div className="statDisplay">
+                <div className="statImage">
+                  <img src={trophy}></img>
+                </div>
+                <span>{bestTime}</span>
               </div>
-              <span>{bestTime}</span>
             </div>
           </div>
-        </div>
-        <button className="restart" onClick={HandleRestart}>
-          Try Again
-        </button>
-      </>
-    );
-  }
+          <button className="restart" onClick={HandleRestart}>
+            Try Again
+          </button>
+        </>
+      );
+    }
 
-  return (
-    <div className={className} onMouseDown={HandleClick}>
-      {modal}
-    </div>
-  );
+    return (
+      <div className={className} onMouseDown={HandleClick}>
+        {modal}
+      </div>
+    );
+  }, [props.game.status, props.overlayStatus]);
 };
 
 export default GameOverlay;

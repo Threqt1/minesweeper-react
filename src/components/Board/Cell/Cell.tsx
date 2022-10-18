@@ -1,4 +1,4 @@
-import { CSSProperties, useContext, useRef } from "react";
+import { CSSProperties, useContext, useMemo, useRef } from "react";
 
 import { BorderInfo } from "../../../game/Board";
 import { Minesweeper, Utility } from "../../../types";
@@ -105,142 +105,159 @@ const Cell = (props: CellProps) => {
 
   /* Render */
 
-  let children: JSX.Element[] = [];
-  let childrenWithRef: ((
-    ref: React.MutableRefObject<HTMLDivElement | undefined>
-  ) => JSX.Element)[] = [];
-  let className = "cell";
+  /* Wrap in a useMemo for performance */
+  return useMemo(() => {
+    let children: JSX.Element[] = [];
+    let childrenWithRef: ((
+      ref: React.MutableRefObject<HTMLDivElement | undefined>
+    ) => JSX.Element)[] = [];
+    let className = "cell";
 
-  /* Add classes for basic styling */
-  if (props.cellInfo.isFlipped) {
-    if (props.cellInfo.isBomb) {
-      className += ` mine-${props.cellInfo.seed % 8}`;
-      children.push(<div className="mineCircle" key="mineCircle" />);
+    /* Add classes for basic styling */
+    if (props.cellInfo.isFlipped) {
+      if (props.cellInfo.isBomb) {
+        className += ` mine-${props.cellInfo.seed % 8}`;
+        children.push(<div className="mineCircle" key="mineCircle" />);
+      } else {
+        className += ` flipped-${props.cellInfo.seed % 2}`;
+      }
     } else {
-      className += ` flipped-${props.cellInfo.seed % 2}`;
+      className += ` hidden-${props.cellInfo.seed % 2}`;
     }
-  } else {
-    className += ` hidden-${props.cellInfo.seed % 2}`;
-  }
-  if (props.cellInfo.peeked) {
-    className += ` highlighted`;
-  }
-
-  /* Handle if the cell is supposed to flash */
-  if (props.cellInfo.win) {
-    if (props.cellInfo.isBomb) {
-      className += ` winFlash`;
-    } else {
-      className += ` win-${props.cellInfo.seed % 2}`;
+    if (props.cellInfo.peeked) {
+      className += ` highlighted`;
     }
-  }
 
-  /* Handle borders */
-  let borders: JSX.Element[] = [];
-  for (let direction of Object.keys(props.cellInfo.borders)) {
-    borders.push(
-      <div className={`border-${direction}`} key={`borders-${direction}`} />
-    );
-  }
+    /* Handle if the cell is supposed to flash */
+    if (props.cellInfo.win) {
+      if (props.cellInfo.isBomb) {
+        className += ` winFlash`;
+      } else {
+        className += ` win-${props.cellInfo.seed % 2}`;
+      }
+    }
 
-  children.push(
-    <div className="borders" key="borders">
-      {borders}
-    </div>
-  );
-
-  /* Handle Flagging. Wrap in function as we need cell ref for sizing */
-  childrenWithRef.push((ref) => {
-    let flagImage = undefined;
-    if (props.cellInfo.isFlagged && ref.current) {
-      flagImage = (
-        <img
-          style={{
-            width: `${Math.floor(ref.current.clientWidth - 1)}px`,
-            height: `${Math.floor(ref.current.clientHeight - 1)}px`,
-          }}
-          className="cellImage"
-          src={flag}
-          key="flagImage"
-        />
+    /* Handle borders */
+    let borders: JSX.Element[] = [];
+    for (let direction of Object.keys(props.cellInfo.borders)) {
+      borders.push(
+        <div className={`border-${direction}`} key={`borders-${direction}`} />
       );
     }
-    return (
-      <div
-        className={`flagAnimation ${flagImage ? `start` : ``}`}
-        key="flagHolder"
-      >
-        {flagImage}
+
+    children.push(
+      <div className="borders" key="borders">
+        {borders}
       </div>
     );
-  });
 
-  /* Handle if the flag was wrong */
-  childrenWithRef.push((ref) => {
-    let wrongFlagImage = undefined;
-    if (props.cellInfo.fail && props.cellInfo.fail.isWrongFlag && ref.current) {
-      wrongFlagImage = (
-        <img
-          style={{
-            width: `${Math.floor(ref.current.clientWidth - 1)}px`,
-            height: `${Math.floor(ref.current.clientHeight - 1)}px`,
-          }}
-          className="cellImage"
-          src={wrongFlag}
-          key="wrongFlagImage"
-        />
+    /* Handle Flagging. Wrap in function as we need cell ref for sizing */
+    childrenWithRef.push((ref) => {
+      let flagImage = undefined;
+      if (props.cellInfo.isFlagged && ref.current) {
+        flagImage = (
+          <img
+            style={{
+              width: `${Math.floor(ref.current.clientWidth - 1)}px`,
+              height: `${Math.floor(ref.current.clientHeight - 1)}px`,
+            }}
+            className="cellImage"
+            src={flag}
+            key="flagImage"
+          />
+        );
+      }
+      return (
+        <div
+          className={`flagAnimation ${flagImage ? `start` : ``}`}
+          key="flagHolder"
+        >
+          {flagImage}
+        </div>
       );
+    });
+
+    /* Handle if the flag was wrong */
+    childrenWithRef.push((ref) => {
+      let wrongFlagImage = undefined;
+      if (
+        props.cellInfo.fail &&
+        props.cellInfo.fail.isWrongFlag &&
+        ref.current
+      ) {
+        wrongFlagImage = (
+          <img
+            style={{
+              width: `${Math.floor(ref.current.clientWidth - 1)}px`,
+              height: `${Math.floor(ref.current.clientHeight - 1)}px`,
+            }}
+            className="cellImage"
+            src={wrongFlag}
+            key="wrongFlagImage"
+          />
+        );
+      }
+      return <div key="wrongFlagImageHolder">{wrongFlagImage}</div>;
+    });
+
+    /* Handle the adjacent mine text */
+    let spanClass = ``;
+    let spanText = undefined;
+
+    if (props.cellInfo.adjacentMines > 0 && props.cellInfo.isFlipped) {
+      spanClass += `near-${props.cellInfo.adjacentMines} `;
+      spanText = props.cellInfo.adjacentMines;
     }
-    return <div key="wrongFlagImageHolder">{wrongFlagImage}</div>;
-  });
 
-  /* Handle the adjacent mine text */
-  let spanClass = ``;
-  let spanText = undefined;
+    if (props.cellInfo.win) {
+      spanClass += `hideText `;
+    }
 
-  if (props.cellInfo.adjacentMines > 0 && props.cellInfo.isFlipped) {
-    spanClass += `near-${props.cellInfo.adjacentMines} `;
-    spanText = props.cellInfo.adjacentMines;
-  }
+    children.push(
+      <span
+        className={spanClass.trim().length === 0 ? undefined : spanClass.trim()}
+        key="minesNearSpan"
+      >
+        {spanText}
+      </span>
+    );
 
-  if (props.cellInfo.win) {
-    spanClass += `hideText `;
-  }
+    /* Set style properties */
+    let style: CSSProperties | undefined = undefined;
 
-  children.push(
-    <span
-      className={spanClass.trim().length === 0 ? undefined : spanClass.trim()}
-      key="minesNearSpan"
-    >
-      {spanText}
-    </span>
-  );
+    /* Set transition based on if its needed or not */
+    if (props.cellInfo.win && !props.cellInfo.isBomb) {
+      style = {
+        ...(style ?? {}),
+        transition: `background-color 1s linear 0.7s`,
+      };
+    }
 
-  /* Set style properties */
-  let style: CSSProperties | undefined = undefined;
+    /* Set font size */
+    style = { ...(style ?? {}), fontSize };
 
-  /* Set transition based on if its needed or not */
-  if (props.cellInfo.win && !props.cellInfo.isBomb) {
-    style = { ...(style ?? {}), transition: `background-color 1s linear 0.7s` };
-  }
-
-  /* Set font size */
-  style = { ...(style ?? {}), fontSize };
-
-  return (
-    <div
-      ref={cellRef as any}
-      className={className.trim()}
-      style={style}
-      onMouseDown={HandleMouseDown}
-      onMouseUp={HandleMouseUp}
-      onMouseLeave={HandleMouseLeave}
-      key={`cell-${props.cellInfo.coordinate.y}-${props.cellInfo.coordinate.x}`}
-    >
-      {children}
-      {childrenWithRef.map((r) => r(cellRef))}
-    </div>
-  );
+    return (
+      <div
+        ref={cellRef as any}
+        className={className.trim()}
+        style={style}
+        onMouseDown={HandleMouseDown}
+        onMouseUp={HandleMouseUp}
+        onMouseLeave={HandleMouseLeave}
+        key={`cell-${props.cellInfo.coordinate.y}-${props.cellInfo.coordinate.x}`}
+      >
+        {children}
+        {childrenWithRef.map((r) => r(cellRef))}
+      </div>
+    );
+  }, [
+    props.cellInfo.isFlagged,
+    props.cellInfo.isFlipped,
+    props.cellInfo.peeked,
+    props.cellInfo.fail,
+    props.cellInfo.win,
+    props.cellInfo.borders,
+  ]);
 };
 
 export default Cell;

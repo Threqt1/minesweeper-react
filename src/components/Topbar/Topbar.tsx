@@ -6,6 +6,7 @@ import TimeTracker from "./TimeTracker";
 import VolumeToggle from "./VolumeToggle";
 
 import "./Topbar.scss";
+import { useMemo } from "react";
 
 interface TopbarProps {
   difficulty: {
@@ -23,33 +24,41 @@ interface TopbarProps {
  * Represents the bar on top of the field with information about the game
  */
 const Topbar = (props: TopbarProps) => {
-  return (
-    <nav
-      style={{
-        width: props.windowSize.size,
-      }}
-      className="topbar"
-    >
-      <ul className="topbar-elem topbar-left">
-        <li>
-          <DifficultyDropdown difficulty={props.difficulty} />
-        </li>
-      </ul>
-      <ul className="topbar-elem topbar-center">
-        <li>
-          <FlagTracker flags={props.flags} />
-        </li>
-        <li>
-          <TimeTracker status={props.status} />
-        </li>
-      </ul>
-      <ul className="topbar-elem topbar-right">
-        <li>
-          <VolumeToggle />
-        </li>
-      </ul>
-    </nav>
-  );
+  /* Wrap in useMemo for performance */
+  return useMemo(() => {
+    return (
+      <nav
+        style={{
+          width: props.windowSize.size,
+        }}
+        className="topbar"
+      >
+        <ul className="topbar-elem topbar-left">
+          <li>
+            <DifficultyDropdown difficulty={props.difficulty} />
+          </li>
+        </ul>
+        <ul className="topbar-elem topbar-center">
+          <li>
+            <FlagTracker flags={props.flags} />
+          </li>
+          <li>
+            <TimeTracker status={props.status} />
+          </li>
+        </ul>
+        <ul className="topbar-elem topbar-right">
+          <li>
+            <VolumeToggle />
+          </li>
+        </ul>
+      </nav>
+    );
+  }, [
+    props.windowSize,
+    props.difficulty.difficulty,
+    props.flags,
+    props.status,
+  ]);
 };
 
 export default Topbar;
